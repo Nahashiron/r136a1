@@ -18,7 +18,6 @@ R136A1/
 // =====================================================
 const MEDIA_DIR = 'assets/';
 const MEDIA_FILES = [
-  // Залиш ті, що реально є. Можна 16-18 або будь-яку іншу кількість.
   '01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg','07.jpg','08.jpg','09.jpg','10.jpg',
   '11.jpg','12.jpg','13.jpg','14.jpg','15.jpg','16.jpg','17.jpg','18.jpg',
 ];
@@ -58,15 +57,18 @@ function fadeTo(target, ms = 900) {
 function startMusic() {
   if (musicStarted) return;
   musicStarted = true;
+
   music.play().catch(() => {
-    // якщо браузер не дасть — просто ігноруємо (але після кліку зазвичай дає)
+    // iOS/Safari може дозволити тільки після взаємодії — у нас якраз клік/тап
   });
+
   fadeTo(0.35, 900);
 }
 
 function stopMusic() {
   if (!musicStarted) return;
   fadeTo(0.0, 700);
+
   setTimeout(() => {
     music.pause();
     music.currentTime = 0;
@@ -107,6 +109,11 @@ document.body.appendChild(renderer.domElement);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.35;
+
+// iPhone/Safari: щоб тач не з'їдався жестами
+renderer.domElement.style.touchAction = 'none';
+// інколи рятує від подвійного зуму/скролу на canvas
+renderer.domElement.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 
 // =====================================================
 // Lights
@@ -212,7 +219,6 @@ const star = new THREE.Mesh(
   })
 );
 
-// якщо твій setStarBlue підходить — ок (але не зламає навіть якщо ні)
 try {
   setStarBlue(star);
   if (star.material.emissiveIntensity !== undefined) {
@@ -467,6 +473,7 @@ function buildThumbs() {
       card.innerHTML = `<div style="color:white; opacity:0.85; font-family: monospace; padding:10px;">${file}</div>`;
     }
 
+    // click ок, бо тут звичайний DOM (не WebGL)
     card.addEventListener('click', () => showMedia(idx));
     card.dataset.idx = String(idx);
     t.appendChild(card);
@@ -515,39 +522,31 @@ window.addEventListener('keydown', (e) => {
 });
 
 // =====================================================
-// Interaction: hover + click + zoom
+// Interaction (iPhone-friendly): pointer/touch + zoom + gallery
 // =====================================================
 const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
+const pointer = new THREE.Vector2();
 let hoveringStar = false;
 
-function setMouseFromEvent(e) {
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+function setPointerFromClientXY(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -(((clientY - rect.top) / rect.height) * 2 - 1);
 }
 
-window.addEventListener('mousemove', (e) => {
-  if (modal.style.display === 'flex') return;
-  setMouseFromEvent(e);
-  raycaster.setFromCamera(mouse, camera);
-  const hit = raycaster.intersectObject(star).length > 0;
+function isStarHit() {
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObject(star, true);
+  return hits.length > 0;
+}
 
-  if (hit !== hoveringStar) {
-    hoveringStar = hit;
-    document.body.style.cursor = hit ? 'pointer' : 'default';
-  }
-});
-
-window.addEventListener('click', (e) => {
-  // якщо модалка відкрита — не ловимо кліки по сцені
+function handleStarTap(clientX, clientY) {
   if (modal.style.display === 'flex') return;
 
-  setMouseFromEvent(e);
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObject(star);
-  if (!hits.length) return;
+  setPointerFromClientXY(clientX, clientY);
+  if (!isStarHit()) return;
 
-  // Перший клік: підліт + старт музики
+  // 1-й тап: зум + музика
   if (!zoomDone && !zooming) {
     startMusic();
     zooming = true;
@@ -556,11 +555,35 @@ window.addEventListener('click', (e) => {
     return;
   }
 
-  // Другий клік: галерея
+  // 2-й тап: галерея
   if (zoomDone && !zooming) {
     openGallery();
   }
-});
+}
+
+// hover (для десктопа)
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (modal.style.display === 'flex') return;
+  setPointerFromClientXY(e.clientX, e.clientY);
+
+  const hit = isStarHit();
+  if (hit !== hoveringStar) {
+    hoveringStar = hit;
+    document.body.style.cursor = hit ? 'pointer' : 'default';
+  }
+}, { passive: true });
+
+// tap/click (iOS-friendly)
+renderer.domElement.addEventListener('pointerup', (e) => {
+  handleStarTap(e.clientX, e.clientY);
+}, { passive: true });
+
+// fallback touch
+renderer.domElement.addEventListener('touchend', (e) => {
+  const t = e.changedTouches && e.changedTouches[0];
+  if (!t) return;
+  handleStarTap(t.clientX, t.clientY);
+}, { passive: true });
 
 // =====================================================
 // Resize
