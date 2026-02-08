@@ -1,18 +1,6 @@
 // main.js (ES module)
 import { setStarBlue } from './starColor.js';
 
-/*
-Структура папок:
-R136A1/
-  index.html
-  main.js
-  starColor.js
-  assets/
-    01.jpg ... (скільки треба)
-  audio/
-    song.mp3
-*/
-
 // =====================================================
 // MEDIA (ТУТ СПИСОК ТВОЇХ ФОТО)
 // =====================================================
@@ -641,3 +629,4 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
