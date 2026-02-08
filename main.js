@@ -47,7 +47,6 @@ function startMusic() {
   musicStarted = true;
 
   music.play().catch(() => {
-    // iOS/Safari може дозволити тільки після взаємодії — у нас якраз клік/тап
   });
 
   fadeTo(0.35, 900);
@@ -629,4 +628,5 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
 
