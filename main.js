@@ -256,7 +256,7 @@ let zoomDone = false;
 // Overlay text
 // =====================================================
 const overlay = document.getElementById('overlay');
-overlay.innerText = 'У кожному всесвіті є щось унікальне';
+overlay.innerText = 'R136A1 mea, tu es clarissima stella';
 overlay.style.opacity = 1;
 
 // =====================================================
@@ -628,5 +628,6 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
 
 
