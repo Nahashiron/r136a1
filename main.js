@@ -1,8 +1,20 @@
 // main.js (ES module)
 import { setStarBlue } from './starColor.js';
 
+/*
+Структура папок:
+R136A1/
+  index.html
+  main.js
+  starColor.js
+  assets/
+    01.jpg ... (скільки треба)
+  audio/
+    song.mp3
+*/
+
 // =====================================================
-// MEDIA (ТУТ СПИСОК ТВОЇХ ФОТО)
+// MEDIA
 // =====================================================
 const MEDIA_DIR = 'assets/';
 const MEDIA_FILES = [
@@ -10,10 +22,34 @@ const MEDIA_FILES = [
   '11.jpg','12.jpg','13.jpg','14.jpg','15.jpg','16.jpg','17.jpg','18.jpg',
 ];
 
-// (опціонально) ПІДПИСИ
 const CAPTIONS = {
   // '01.jpg': '...',
 };
+
+// =====================================================
+// POEM
+// =====================================================
+const POEM_TEXT = `Пробач
+
+Пробач мене, прошу, пробач.
+Пробач, що зіпсував фрагмент.
+Пробач, що страх узяв наді мною верх
+І я зламав той крихітний момент.
+Пробач за те, що думаю так мало,
+Пробач за скупість і жагу.
+Пробач, що знову все втрачаю,
+І сам не знаю, як тепер живу.
+Пробач, що плачу над дурницями,
+Що знов роблю одну вину.
+Пробач, що сили залишають,
+І я знов падаю в пітьму.
+Пробач - це слово тихе й крихке,
+Його так легко загубить.
+Та я пишу його сьогодні,
+Бо сам себе не можу я простить.
+І прошу тільки одного -
+Щоб ти змогла мене простить.
+R136A1, пробач за ці качелі, за мій страх і зламані миті - я все ще кохаю і мрію лише про тебе.`;
 
 // =====================================================
 // MUSIC
@@ -46,9 +82,7 @@ function startMusic() {
   if (musicStarted) return;
   musicStarted = true;
 
-  music.play().catch(() => {
-  });
-
+  music.play().catch(() => {});
   fadeTo(0.35, 900);
 }
 
@@ -69,9 +103,11 @@ function stopMusic() {
 function isImage(file) {
   return /\.(jpg|jpeg|png|webp|gif)$/i.test(file);
 }
+
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
 }
+
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
@@ -97,9 +133,8 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.35;
 
-// iPhone/Safari: щоб тач не з'їдався жестами
+// iPhone/Safari
 renderer.domElement.style.touchAction = 'none';
-// інколи рятує від подвійного зуму/скролу на canvas
 renderer.domElement.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 
 // =====================================================
@@ -114,6 +149,11 @@ scene.add(keyLight);
 const rimLight = new THREE.PointLight(0x88bbff, 0.55, 1200);
 rimLight.position.set(-14, -10, 20);
 scene.add(rimLight);
+
+// трохи теплого світла для золотої зірки
+const warmLight = new THREE.PointLight(0xffd39b, 0.45, 1000);
+warmLight.position.set(18, 10, 12);
+scene.add(warmLight);
 
 // =====================================================
 // Textures
@@ -154,6 +194,24 @@ function makeGlowTextureBlue(size = 256) {
   return new THREE.CanvasTexture(c);
 }
 
+function makeGlowTextureWarm(size = 256) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const r = size / 2;
+
+  const g = ctx.createRadialGradient(r, r, 0, r, r, r);
+  g.addColorStop(0.0, 'rgba(255,219,150,0.78)');
+  g.addColorStop(0.26, 'rgba(255,219,150,0.34)');
+  g.addColorStop(0.60, 'rgba(255,219,150,0.12)');
+  g.addColorStop(1.0, 'rgba(255,219,150,0)');
+
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+
+  return new THREE.CanvasTexture(c);
+}
+
 // =====================================================
 // Background stars
 // =====================================================
@@ -165,7 +223,7 @@ function makeStarField(count, spread, size, opacity) {
 
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
-    pos[i3]     = (Math.random() - 0.5) * spread;
+    pos[i3] = (Math.random() - 0.5) * spread;
     pos[i3 + 1] = (Math.random() - 0.5) * spread;
     pos[i3 + 2] = (Math.random() - 0.5) * spread * 1.6;
   }
@@ -193,7 +251,7 @@ scene.add(starsA);
 scene.add(starsB);
 
 // =====================================================
-// R136A1 star
+// Main star
 // =====================================================
 const star = new THREE.Mesh(
   new THREE.SphereGeometry(1.45, 72, 72),
@@ -215,7 +273,6 @@ try {
 
 scene.add(star);
 
-// Halo
 const glow = new THREE.Sprite(
   new THREE.SpriteMaterial({
     map: makeGlowTextureBlue(256),
@@ -228,7 +285,6 @@ const glow = new THREE.Sprite(
 glow.scale.set(10.5, 10.5, 1);
 star.add(glow);
 
-// Corona
 const corona = new THREE.Mesh(
   new THREE.SphereGeometry(1.75, 48, 48),
   new THREE.MeshBasicMaterial({
@@ -242,6 +298,48 @@ const corona = new THREE.Mesh(
 star.add(corona);
 
 // =====================================================
+// Small warm poem star
+// =====================================================
+const poemStar = new THREE.Mesh(
+  new THREE.SphereGeometry(0.48, 56, 56),
+  new THREE.MeshStandardMaterial({
+    color: 0xffd79a,
+    emissive: 0x9b6428,
+    emissiveIntensity: 0.85,
+    roughness: 0.42,
+    metalness: 0.0
+  })
+);
+
+// праворуч зверху, трохи далі від основної і трохи вглиб
+poemStar.position.set(12.8, 7.2, -10.5);
+scene.add(poemStar);
+
+const poemGlow = new THREE.Sprite(
+  new THREE.SpriteMaterial({
+    map: makeGlowTextureWarm(256),
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    opacity: 0.62
+  })
+);
+poemGlow.scale.set(4.8, 4.8, 1);
+poemStar.add(poemGlow);
+
+const poemCorona = new THREE.Mesh(
+  new THREE.SphereGeometry(0.62, 32, 32),
+  new THREE.MeshBasicMaterial({
+    color: 0xffd39b,
+    transparent: true,
+    opacity: 0.08,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+);
+poemStar.add(poemCorona);
+
+// =====================================================
 // Camera + states
 // =====================================================
 const camHome = new THREE.Vector3(0, 0, 42);
@@ -249,18 +347,18 @@ const camZoomTarget = new THREE.Vector3(0, 0, 9.5);
 camera.position.copy(camHome);
 
 let zooming = false;
-let zoomT = 0;      // 0..1
+let zoomT = 0;
 let zoomDone = false;
 
 // =====================================================
 // Overlay text
 // =====================================================
 const overlay = document.getElementById('overlay');
-overlay.innerText = 'R136A1 mea, tu es clarissima stella';
+overlay.innerText = 'У кожному всесвіті є щось унікальне';
 overlay.style.opacity = 1;
 
 // =====================================================
-// Gallery Modal (HTML overlay)
+// Gallery Modal
 // =====================================================
 const modal = document.createElement('div');
 modal.id = 'galleryModal';
@@ -360,6 +458,109 @@ modal.innerHTML = `
 `;
 document.body.appendChild(modal);
 
+// =====================================================
+// Poem Modal as a letter
+// =====================================================
+const poemModal = document.createElement('div');
+poemModal.id = 'poemModal';
+poemModal.style.cssText = `
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.74);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(7px);
+`;
+
+poemModal.innerHTML = `
+  <div style="
+    width: min(780px, 92vw);
+    max-height: 82vh;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.35), transparent 32%),
+      linear-gradient(180deg, #f5e6ca 0%, #edd8b0 100%);
+    border: 1px solid rgba(90,60,30,0.18);
+    border-radius: 18px;
+    box-shadow:
+      0 18px 60px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  ">
+    <div style="
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(90,60,30,0.14);
+      color: #5b3c23;
+      font-family: Georgia, 'Times New Roman', serif;
+      background: rgba(255,255,255,0.18);
+    ">
+      <div style="font-size: 20px; letter-spacing: 0.3px;">Лист</div>
+      <button id="poemClose" style="
+        background: rgba(91,60,35,0.08);
+        border: 1px solid rgba(91,60,35,0.16);
+        color: #5b3c23;
+        padding: 8px 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-family: inherit;
+      ">Закрити ✕</button>
+    </div>
+
+    <div style="
+      padding: 26px 24px 28px;
+      overflow: auto;
+      position: relative;
+    ">
+      <div id="poemPaper" style="
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04)),
+          repeating-linear-gradient(
+            180deg,
+            rgba(120,85,45,0.05) 0px,
+            rgba(120,85,45,0.05) 1px,
+            transparent 1px,
+            transparent 34px
+          );
+        border-radius: 14px;
+        padding: 28px 26px;
+        color: #4d3421;
+        box-shadow: inset 0 0 0 1px rgba(90,60,30,0.08);
+      ">
+        <div style="
+          text-align: center;
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 18px;
+          opacity: 0.75;
+          margin-bottom: 12px;
+        ">✦</div>
+
+        <pre id="poemText" style="
+          margin: 0;
+          white-space: pre-wrap;
+          word-break: break-word;
+          color: #4d3421;
+          font-size: 21px;
+          line-height: 1.8;
+          font-family: Georgia, 'Times New Roman', serif;
+          text-align: left;
+        "></pre>
+      </div>
+    </div>
+  </div>
+`;
+document.body.appendChild(poemModal);
+document.getElementById('poemText').textContent = POEM_TEXT;
+
+// =====================================================
+// Gallery logic
+// =====================================================
 const viewer = () => document.getElementById('viewer');
 const thumbs = () => document.getElementById('thumbs');
 const captionEl = () => document.getElementById('caption');
@@ -460,7 +661,6 @@ function buildThumbs() {
       card.innerHTML = `<div style="color:white; opacity:0.85; font-family: monospace; padding:10px;">${file}</div>`;
     }
 
-    // click ок, бо тут звичайний DOM (не WebGL)
     card.addEventListener('click', () => showMedia(idx));
     card.dataset.idx = String(idx);
     t.appendChild(card);
@@ -479,7 +679,7 @@ function highlightThumb() {
 }
 
 function openGallery() {
-  startMusic(); // 🎵
+  startMusic();
   buildThumbs();
   showMedia(currentIndex);
   modal.style.display = 'flex';
@@ -487,8 +687,18 @@ function openGallery() {
 }
 
 function closeGallery() {
-  stopMusic(); // 🎵
+  stopMusic();
   modal.style.display = 'none';
+  overlay.innerText = 'У кожному всесвіті є щось унікальне';
+}
+
+function openPoemModal() {
+  poemModal.style.display = 'flex';
+  overlay.innerText = '✨';
+}
+
+function closePoemModal() {
+  poemModal.style.display = 'none';
   overlay.innerText = 'У кожному всесвіті є щось унікальне';
 }
 
@@ -500,20 +710,30 @@ modal.addEventListener('click', (e) => {
 document.getElementById('prevBtn')?.addEventListener('click', () => showMedia(currentIndex - 1));
 document.getElementById('nextBtn')?.addEventListener('click', () => showMedia(currentIndex + 1));
 
+document.getElementById('poemClose')?.addEventListener('click', closePoemModal);
+poemModal.addEventListener('click', (e) => {
+  if (e.target === poemModal) closePoemModal();
+});
+
 window.addEventListener('keydown', (e) => {
   if (modal.style.display === 'flex') {
     if (e.key === 'Escape') closeGallery();
     if (e.key === 'ArrowLeft') showMedia(currentIndex - 1);
     if (e.key === 'ArrowRight') showMedia(currentIndex + 1);
   }
+
+  if (poemModal.style.display === 'flex' && e.key === 'Escape') {
+    closePoemModal();
+  }
 });
 
 // =====================================================
-// Interaction (iPhone-friendly): pointer/touch + zoom + gallery
+// Interaction
 // =====================================================
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let hoveringStar = false;
+let hoveringPoemStar = false;
 
 function setPointerFromClientXY(clientX, clientY) {
   const rect = renderer.domElement.getBoundingClientRect();
@@ -521,19 +741,26 @@ function setPointerFromClientXY(clientX, clientY) {
   pointer.y = -(((clientY - rect.top) / rect.height) * 2 - 1);
 }
 
-function isStarHit() {
+function isHit(obj) {
   raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObject(star, true);
+  const hits = raycaster.intersectObject(obj, true);
   return hits.length > 0;
 }
 
-function handleStarTap(clientX, clientY) {
-  if (modal.style.display === 'flex') return;
+function handleTap(clientX, clientY) {
+  if (modal.style.display === 'flex' || poemModal.style.display === 'flex') return;
 
   setPointerFromClientXY(clientX, clientY);
-  if (!isStarHit()) return;
 
-  // 1-й тап: зум + музика
+  // спочатку маленька зірка
+  if (isHit(poemStar)) {
+    openPoemModal();
+    return;
+  }
+
+  // потім головна
+  if (!isHit(star)) return;
+
   if (!zoomDone && !zooming) {
     startMusic();
     zooming = true;
@@ -542,34 +769,33 @@ function handleStarTap(clientX, clientY) {
     return;
   }
 
-  // 2-й тап: галерея
   if (zoomDone && !zooming) {
     openGallery();
   }
 }
 
-// hover (для десктопа)
 renderer.domElement.addEventListener('pointermove', (e) => {
-  if (modal.style.display === 'flex') return;
+  if (modal.style.display === 'flex' || poemModal.style.display === 'flex') return;
+
   setPointerFromClientXY(e.clientX, e.clientY);
 
-  const hit = isStarHit();
-  if (hit !== hoveringStar) {
-    hoveringStar = hit;
-    document.body.style.cursor = hit ? 'pointer' : 'default';
-  }
+  const hitMain = isHit(star);
+  const hitPoem = isHit(poemStar);
+
+  hoveringStar = hitMain;
+  hoveringPoemStar = hitPoem;
+
+  document.body.style.cursor = (hitMain || hitPoem) ? 'pointer' : 'default';
 }, { passive: true });
 
-// tap/click (iOS-friendly)
 renderer.domElement.addEventListener('pointerup', (e) => {
-  handleStarTap(e.clientX, e.clientY);
+  handleTap(e.clientX, e.clientY);
 }, { passive: true });
 
-// fallback touch
 renderer.domElement.addEventListener('touchend', (e) => {
   const t = e.changedTouches && e.changedTouches[0];
   if (!t) return;
-  handleStarTap(t.clientX, t.clientY);
+  handleTap(t.clientX, t.clientY);
 }, { passive: true });
 
 // =====================================================
@@ -596,16 +822,18 @@ function animate() {
   starsA.rotation.x = Math.sin(t * 0.02) * 0.02;
   starsB.rotation.x = Math.sin(t * 0.015) * 0.012;
 
-  // зірка
+  // головна зірка
   star.rotation.y += 0.0009;
-
-  // пульсація
   const pulse = 1.0 + Math.sin(t * 1.2) * 0.18;
   star.material.emissiveIntensity = pulse;
-
-  // hover підсилює glow
   glow.material.opacity = (hoveringStar ? 0.98 : 0.82) + Math.sin(t * 1.2) * 0.08;
   corona.material.opacity = 0.09 + Math.sin(t * 0.9) * 0.03;
+
+  // маленька тепла зірка
+  poemStar.rotation.y += 0.0011;
+  poemStar.material.emissiveIntensity = 0.78 + Math.sin(t * 1.4) * 0.10;
+  poemGlow.material.opacity = (hoveringPoemStar ? 0.78 : 0.62) + Math.sin(t * 1.0) * 0.05;
+  poemCorona.material.opacity = 0.07 + Math.sin(t * 0.85) * 0.025;
 
   // zoom
   if (zooming) {
@@ -614,7 +842,6 @@ function animate() {
 
     camera.position.lerpVectors(camHome, camZoomTarget, k);
 
-    // приглушуємо фон при наближенні
     starsA.material.opacity = 0.95 - k * 0.35;
     starsB.material.opacity = 0.85 - k * 0.35;
 
@@ -628,6 +855,3 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
-
-
-
